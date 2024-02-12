@@ -36,3 +36,97 @@ With Kotlin coroutines, we can utilize a single background thread and launch mul
 <div align="center">
     <img src="./assets/coroutine-1.png" alt="Kotlin Coroutines" width="300">
 </div>
+
+**Be careful Coroutine != Thread**
+
+**For threads:**
+
+The main program starts a background thread and then continues to execute and exit independently. The background thread will run concurrently with the main thread and eventually exit on its own.:
+```kotlin
+fun main() { // this: CoroutineScope
+    println("Main program starts: ${Thread.currentThread().name}")
+
+    thread {// background thread
+        println("Background thread starts: ${Thread.currentThread().name}")
+        Thread.sleep(1000) //some async jobs
+        println("Background thread ends: ${Thread.currentThread().name}")
+    }
+
+    println("Main program ends: ${Thread.currentThread().name}")
+}
+/* output
+Main program starts: main
+Main program ends: main
+Mock job starts: Thread-0
+Mock job ends: Thread-0
+
+Process finished with exit code 0 
+ The main thread starts and ends immediately, while the background thread performs a mock job asynchronously and then ends. 
+ */
+```
+
+**For coroutines:**
+- While the main thread finishes quickly, the coroutine runs independently on a background thread.
+- The main program doesn't wait for the coroutine to finish, allowing the UI to remain responsive.
+- This is asynchronous nature of coroutines - they don't block the main thread.
+```kotlin
+fun main() { // this: CoroutineScope
+    println("Main program starts: ${Thread.currentThread().name}")
+
+    GlobalScope.launch {// background coroutine runs on a background thread
+        println("Coroutine starts in background: ${Thread.currentThread().name}")
+        Thread.sleep(1000) //some async jobs
+        println("Coroutine ends in background: ${Thread.currentThread().name}")
+    }
+
+    println("Main program ends: ${Thread.currentThread().name}")
+}
+
+/*output
+
+Main program starts: main
+Main program ends: main
+
+Process finished with exit code 0
+ */
+```
+
+**How can we ensure that the coroutines complete their tasks before we proceed?**
+
+What if I use `delay` instead of `Thread.sleep(1000)`?
+
+```kotlin
+fun main() { // this: CoroutineScope
+    println("Main program starts: ${Thread.currentThread().name}")
+
+    GlobalScope.launch {//i.e T1
+        println("Coroutine starts in background: ${Thread.currentThread().name}") 
+
+        delay(1000) // T1 is free - NOT blocked
+        println("Coroutine ends in background: ${Thread.currentThread().name}") //T1
+    }
+
+    //Blocks the current main thread - NOT a right way atm
+    Thread.sleep(1500)
+    println("Main program ends: ${Thread.currentThread().name}")//T1 or some other thread
+}
+/* 
+output:
+Main program starts: main
+Coroutine starts in background: DefaultDispatcher-worker-1
+Coroutine ends in background: DefaultDispatcher-worker-1//might be different
+Main program ends: main
+
+Process finished with exit code 0
+ */
+```
+
+`Thread.sleep` pauses the **entire thread**, which isn't ideal for coroutines.
+
+By replacing it with `delay(1000)`, we achieve a more efficient and coroutine-friendly approach:
+
+- **Non-blocking:** delay suspends the coroutine only, allowing other coroutines to run concurrently. The main thread remains responsive.
+- **Lightweight:** Compared to thread creation, coroutines and delay are more resource-efficient.
+- **Flexibility:** delay can be cancelled or resumed, offering more control over asynchronous behavior.
+
+While the overall output might seem similar the underlying behavior differs. With `delay`, the main program and the coroutine execute concurrently, enhancing performance and UI responsiveness.
