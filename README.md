@@ -130,3 +130,76 @@ By replacing it with `delay(1000)`, we achieve a more efficient and coroutine-fr
 - **Flexibility:** delay can be cancelled or resumed, offering more control over asynchronous behavior.
 
 While the overall output might seem similar the underlying behavior differs. With `delay`, the main program and the coroutine execute concurrently, enhancing performance and UI responsiveness.
+
+## Suspend fun
+Kotlin coroutines rely on a special function modifier called `suspend` to define coroutine functions which  are the building blocks of asynchronous operations within your coroutines.
+
+**Key characteristics of `suspend fun`:**
+- **Can't call directly from the main thread:** They require a coroutine context to be launched within.
+- **Can call other suspend fun:** This enables building complex asynchronous workflows by chaining multiple suspendable functions.
+- **Use await for results:** When waiting for the result of another suspend fun, use await to retrieve it after it finishes.
+
+<details>
+<summary><i>Example</i></summary>
+
+```kotlin
+fun main() = runBlocking { // Creates a blocking coroutine scope on the main thread
+    println("Main program starts: ${Thread.currentThread().name}") // main: execution within runBlocking
+
+    GlobalScope.launch { // Launches a new coroutine in a global scope, potentially using a background thread
+        doSomeDelayedJobs()
+    }
+
+    // Blocks the main thread within runBlocking, waiting for the launched coroutine to complete
+    delay(1500)
+    println("Main program ends: ${Thread.currentThread().name}") // Still main, as runBlocking blocks it
+}
+
+suspend fun doSomeDelayedJobs() {
+    println("Coroutine starts: ${Thread.currentThread().name}") // Actual thread depends on dispatcher
+    waitForTimes(1000) // Calls another suspend function
+    println("Coroutine ends: ${Thread.currentThread().name}") // Same thread as above
+}
+
+suspend fun waitForTimes(time: Long) {
+    // Other logic (if any)
+    delay(time) // Suspends this coroutine without blocking the thread
+}
+```
+</details>
+
+## Coroutines Builders
+### What are Coroutine Builders?
+
+Think of them as specialized functions or keywords that streamline coroutine creation and control. Each builder offers unique ways to launch and orchestrate your coroutines based on your specific needs and threading configurations.
+
+### Common Builders:
+<details>
+<summary><b>launch</b></summary>
+Launches a <i>fire-and-forget</i> coroutine, perfect for background tasks that don't need to return a value. Imagine it as starting a worker drone, sending them off on their mission without expecting a report.
+
+</details>
+
+<details>
+<summary><b>async</b></summary>
+It launches a coroutine that produces a valuable result later. Once the drone delivers, you use await to retrieve the precious cargo.
+</details>
+
+<details>
+<summary><b>runBlocking</b></summary>
+This builder acts like a temporary roadblock. It creates a blocking coroutine scope, executing all launched coroutines sequentially and keeping the current thread waiting until they finish. However, <b>tread carefully in production code</b>, as it can freeze your UI!
+</details>
+
+<details>
+<summary><b>coroutineScope</b></summary>
+Similar to runBlocking, but without the roadblock. This builder creates a non-blocking scope, letting your coroutines run freely while keeping an eye on them. Use it to launch multiple tasks and patiently wait for all to complete before moving on.
+</details>
+
+<details>
+<summary><b>withContext</b></summary>
+Need to send your coroutine on a specific mission? This builder is your travel agent. It allows you to switch the current coroutine's context, choosing a different dispatcher like a background thread or even the main thread.
+</details>
+
+### Why are Builders Important?
+
+They're guardians of clean and efficient code. They promote structure, avoid the complexities of manual thread management, and unlock the true potential of asynchronous programming.
