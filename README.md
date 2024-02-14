@@ -298,3 +298,37 @@ Main program ends: main
 ```
 
 [Get full code :part_alternation_mark:](./src/main/kotlin/basics-06.kt)
+
+### runBlocking: Blocking Coroutines for Limited Use Cases
+
+While runBlocking offers a convenient way to launch coroutines, **use it cautiously** as it blocks the current thread
+until all launched coroutines within it complete.
+
+This can negatively impact UI responsiveness in production code.
+
+**Primary Use Cases:**
+
+**_Testing:_** `runBlocking` is valuable for testing suspend functions in a synchronous manner, allowing assertions and
+verifications within the same scope.
+
+```kotlin
+private suspend fun mySuspendFun(): String {
+    // Other logic
+    delay(5000)
+    return "Hello world!"
+}
+internal class SampleTest {
+    @Test
+    fun testSum() = runBlocking {
+        val expected = "Hello world!"
+        val actual = mySuspendFun()// wait for data
+
+        assertEquals(expected, actual)
+    }
+}
+
+```
+
+[Get full code :part_alternation_mark:](./src/test/kotlin/SampleTest.kt)
+
+**_N.B :_** We can use `runBlockingTest` for a more robust testing experience within `JUnit` test suites.
