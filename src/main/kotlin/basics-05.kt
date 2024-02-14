@@ -4,9 +4,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 fun main() = runBlocking { // Creates a blocking coroutine scope on the main thread
-    println("Main program starts: ${Thread.currentThread().name}") // main: execution within runBlocking
+    println("Main program starts: ${Thread.currentThread().name}") // main thread
 
-    GlobalScope.launch { // Launches a new coroutine in a global scope, potentially using a background thread
+   launch { // main ????
         doSomeDelayedJobs()
     }
 
@@ -15,10 +15,10 @@ fun main() = runBlocking { // Creates a blocking coroutine scope on the main thr
     println("Main program ends: ${Thread.currentThread().name}") // Still main, as runBlocking blocks it
 }
 
-private suspend fun doSomeDelayedJobs() {
-    println("Coroutine starts: ${Thread.currentThread().name}") // Actual thread depends on dispatcher
+private  suspend fun doSomeDelayedJobs() {
+    println("Coroutine starts: ${Thread.currentThread().name}")
     waitForTimes(1000) // Calls another suspend function
-    println("Coroutine ends: ${Thread.currentThread().name}") // Same thread as above
+    println("Coroutine ends: ${Thread.currentThread().name}")
 }
 
 private suspend fun waitForTimes(time: Long) {

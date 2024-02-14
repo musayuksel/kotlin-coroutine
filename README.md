@@ -64,6 +64,7 @@ Process finished with exit code 0
  The main thread starts and ends immediately, while the background thread performs a mock job asynchronously and then ends. 
  */
 ```
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-01.kt)
 
 **For coroutines:**
 - While the main thread finishes quickly, the coroutine runs independently on a background thread.
@@ -90,6 +91,7 @@ Main program ends: main
 Process finished with exit code 0
  */
 ```
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-02.kt)
 
 **How can we ensure that the coroutines complete their tasks before we proceed?**
 
@@ -120,6 +122,7 @@ Main program ends: main
 Process finished with exit code 0
  */
 ```
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-03.kt)
 
 `Thread.sleep` pauses the **entire thread**, which isn't ideal for coroutines.
 
@@ -139,9 +142,6 @@ Kotlin coroutines rely on a special function modifier called `suspend` to define
 - **Can call other suspend fun:** This enables building complex asynchronous workflows by chaining multiple suspendable functions.
 - **Use await for results:** When waiting for the result of another suspend fun, use await to retrieve it after it finishes.
 
-<details>
-<summary><i>Example</i></summary>
-
 ```kotlin
 fun main() = runBlocking { // Creates a blocking coroutine scope on the main thread
     println("Main program starts: ${Thread.currentThread().name}") // main: execution within runBlocking
@@ -155,18 +155,8 @@ fun main() = runBlocking { // Creates a blocking coroutine scope on the main thr
     println("Main program ends: ${Thread.currentThread().name}") // Still main, as runBlocking blocks it
 }
 
-suspend fun doSomeDelayedJobs() {
-    println("Coroutine starts: ${Thread.currentThread().name}") // Actual thread depends on dispatcher
-    waitForTimes(1000) // Calls another suspend function
-    println("Coroutine ends: ${Thread.currentThread().name}") // Same thread as above
-}
-
-suspend fun waitForTimes(time: Long) {
-    // Other logic (if any)
-    delay(time) // Suspends this coroutine without blocking the thread
-}
 ```
-</details>
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-04.kt)
 
 ## Coroutines Builders
 ### What are Coroutine Builders?
