@@ -18,20 +18,26 @@ processing other critical tasks. This includes:
 
 **Why Avoid Blocking Operations?**
 
-Heavy operations like file downloads, image loading, and complex network requests can block the main thread, causing your application to freeze and become unresponsive. This leads to a poor user experience and potential ANRs (Application Not Responding) errors.
+Heavy operations like file downloads, image loading, and complex network requests can block the main thread, causing
+your application to freeze and become unresponsive. This leads to a poor user experience and potential ANRs (Application
+Not Responding) errors.
 
 ### Background Threads
-While creating dedicated background threads for each operation seems like a logical solution, it's not ideal. Here's why:
 
-**Resource Intensive:** Each thread consumes memory and system resources, leading to potential performance bottlenecks and crashes, especially when creating many threads.
+**Resource Intensive:** Each thread consumes memory and system resources, leading to potential performance bottlenecks
+and crashes, especially when creating many threads.
 
-**Context Switching Overhead:** Frequent switching between threads incurs overhead, further impacting performance and efficiency.
+**Context Switching Overhead:** Frequent switching between threads incurs overhead, further impacting performance and
+efficiency.
 
-**Complexity Management:** Manually managing numerous threads becomes complex and error-prone, increasing the difficulty of maintenance and debugging.
+**Complexity Management:** Manually managing numerous threads becomes complex and error-prone, increasing the difficulty
+of maintenance and debugging.
 
 **This is where Kotlin coroutines come in as lifesavers!!!**
 
-With Kotlin coroutines, we can utilize a single background thread and launch multiple coroutines on it. Coroutines are lightweight and highly efficient, allowing us to achieve concurrent and asynchronous operations without the overhead of managing multiple threads.
+With Kotlin coroutines, we can utilize a single background thread and launch multiple coroutines on it. Coroutines are
+lightweight and highly efficient, allowing us to achieve concurrent and asynchronous operations without the overhead of
+managing multiple threads.
 
 <div align="center">
     <img src="./assets/coroutine-1.png" alt="Kotlin Coroutines" width="300">
@@ -41,7 +47,9 @@ With Kotlin coroutines, we can utilize a single background thread and launch mul
 
 **For threads:**
 
-The main program starts a background thread and then continues to execute and exit independently. The background thread will run concurrently with the main thread and eventually exit on its own.:
+The main program starts a background thread and then continues to execute and exit independently. The background thread
+will run concurrently with the main thread and eventually exit on its own.:
+
 ```kotlin
 fun main() { // this: CoroutineScope
     println("Main program starts: ${Thread.currentThread().name}")
@@ -64,12 +72,15 @@ Process finished with exit code 0
  The main thread starts and ends immediately, while the background thread performs a mock job asynchronously and then ends. 
  */
 ```
+
 [Get full code :part_alternation_mark:](./src/main/kotlin/basics-01.kt)
 
 **For coroutines:**
+
 - While the main thread finishes quickly, the coroutine runs independently on a background thread.
 - The main program doesn't wait for the coroutine to finish, allowing the UI to remain responsive.
 - This is asynchronous nature of coroutines - they don't block the main thread.
+
 ```kotlin
 fun main() { // this: CoroutineScope
     println("Main program starts: ${Thread.currentThread().name}")
@@ -91,6 +102,7 @@ Main program ends: main
 Process finished with exit code 0
  */
 ```
+
 [Get full code :part_alternation_mark:](./src/main/kotlin/basics-02.kt)
 
 **How can we ensure that the coroutines complete their tasks before we proceed?**
@@ -102,7 +114,7 @@ fun main() { // this: CoroutineScope
     println("Main program starts: ${Thread.currentThread().name}")
 
     GlobalScope.launch {//i.e T1
-        println("Coroutine starts in background: ${Thread.currentThread().name}") 
+        println("Coroutine starts in background: ${Thread.currentThread().name}")
 
         delay(1000) // T1 is free - NOT blocked
         println("Coroutine ends in background: ${Thread.currentThread().name}") //T1
@@ -122,25 +134,33 @@ Main program ends: main
 Process finished with exit code 0
  */
 ```
+
 [Get full code :part_alternation_mark:](./src/main/kotlin/basics-03.kt)
 
 `Thread.sleep` pauses the **entire thread**, which isn't ideal for coroutines.
 
 By replacing it with `delay(1000)`, we achieve a more efficient and coroutine-friendly approach:
 
-- **Non-blocking:** delay suspends the coroutine only, allowing other coroutines to run concurrently. The main thread remains responsive.
+- **Non-blocking:** delay suspends the coroutine only, allowing other coroutines to run concurrently. The main thread
+  remains responsive.
 - **Lightweight:** Compared to thread creation, coroutines and delay are more resource-efficient.
 - **Flexibility:** delay can be cancelled or resumed, offering more control over asynchronous behavior.
 
-While the overall output might seem similar the underlying behavior differs. With `delay`, the main program and the coroutine execute concurrently, enhancing performance and UI responsiveness.
+While the overall output might seem similar the underlying behavior differs. With `delay`, the main program and the
+coroutine execute concurrently, enhancing performance and UI responsiveness.
 
 ## Suspend fun
-Kotlin coroutines rely on a special function modifier called `suspend` to define coroutine functions which  are the building blocks of asynchronous operations within your coroutines.
+
+Kotlin coroutines rely on a special function modifier called `suspend` to define coroutine functions which are the
+building blocks of asynchronous operations within your coroutines.
 
 **Key characteristics of `suspend fun`:**
+
 - **Can't call directly from the main thread:** They require a coroutine context to be launched within.
-- **Can call other suspend fun:** This enables building complex asynchronous workflows by chaining multiple suspendable functions.
-- **Use await for results:** When waiting for the result of another suspend fun, use await to retrieve it after it finishes.
+- **Can call other suspend fun:** This enables building complex asynchronous workflows by chaining multiple suspendable
+  functions.
+- **Use await for results:** When waiting for the result of another suspend fun, use await to retrieve it after it
+  finishes.
 
 ```kotlin
 fun main() = runBlocking { // Creates a blocking coroutine scope on the main thread
@@ -156,14 +176,18 @@ fun main() = runBlocking { // Creates a blocking coroutine scope on the main thr
 }
 
 ```
+
 [Get full code :part_alternation_mark:](./src/main/kotlin/basics-04.kt)
 
 ## Coroutines Builders
+
 ### What are Coroutine Builders?
 
-Think of them as specialized functions or keywords that streamline coroutine creation and control. Each builder offers unique ways to launch and orchestrate your coroutines based on your specific needs and threading configurations.
+Think of them as specialized functions or keywords that streamline coroutine creation and control. Each builder offers
+unique ways to launch and orchestrate your coroutines based on your specific needs and threading configurations.
 
 ### Common Builders:
+
 <details>
 <summary><b>launch</b></summary>
 Launches a <i>fire-and-forget</i> coroutine, perfect for background tasks that don't need to return a value. Imagine it as starting a worker drone, sending them off on their mission without expecting a report.
@@ -192,4 +216,52 @@ Need to send your coroutine on a specific mission? This builder is your travel a
 
 ### Why are Builders Important?
 
-They're guardians of clean and efficient code. They promote structure, avoid the complexities of manual thread management, and unlock the true potential of asynchronous programming.
+They're guardians of clean and efficient code. They promote structure, avoid the complexities of manual thread
+management, and unlock the true potential of asynchronous programming.
+
+### Launch
+
+```kotlin
+// Creates coroutines at global level(app)
+// Do NOT use if it is not mandatory
+GlobalScope.launch {
+    // file download
+    // play music
+}
+
+// Launch within a specific scope (e.g., runBlocking, coroutineScope) for better control and lifecycle management.
+launch {
+    // login operation
+    // some data computation
+}
+```
+
+`launch` The launched coroutine inherits the dispatcher and cancellation behavior of the parent scope. This approach
+provides better control and avoids potential memory leaks.
+
+```kotlin
+fun main() = runBlocking { // Creates a blocking coroutine scope on the main thread
+    println("Main program starts: ${Thread.currentThread().name}") // main thread
+
+    val someDelayedJob: Job = launch { // main -inherit from immediate parent
+        doSomeDelayedJobs()
+    }
+
+    someDelayedJob.join()//Suspends the coroutine until this job is complete!!!
+
+    println("Main program ends: ${Thread.currentThread().name}") // Still main, as runBlocking blocks it
+}
+/* output:
+Main program starts: main
+Coroutine starts: main
+Coroutine ends: main
+Main program ends: main
+ */
+
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-05.kt)
+
+`launch` returns a job object so that we can wait for that job using `.join()` or we can `cancel` it.
+
+
