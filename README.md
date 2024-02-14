@@ -264,4 +264,37 @@ Main program ends: main
 
 `launch` returns a job object so that we can wait for that job using `.join()` or we can `cancel` it.
 
+### Async : Concurrency with Return Values
 
+- `async` is similar to `launch` but designed for coroutines that **return a value**.
+- **Inherits parent scope:** similar to `launch` inherits from the parent scope's cancellation behavior and dispatcher,
+  ensuring proper lifecycle management.
+- **Returns `Deferred`:** it represents the eventual result-similar to `javaScript promise`
+- **Suspends with `await`:** Use `await` on the `Deferred` to pause the current coroutine until the result is available,
+  enabling asynchronous waiting without blocking the thread.
+
+```kotlin
+fun main() = runBlocking { // Creates a blocking coroutine scope on the main thread
+    println("Main program starts: ${Thread.currentThread().name}") // main thread
+
+    val someDelayedDeferred: Deferred<String> = async {
+        doSomeDelayedJobs()//will return some string data
+    }
+    // Main program continues without blocking
+
+    val someData = someDelayedDeferred.await() // Suspends until result is ready
+
+    println("Data returned from server: $someData")
+
+    println("Main program ends: ${Thread.currentThread().name}") // Still main, as runBlocking blocks it
+}
+/*
+Main program starts: main
+Coroutine starts: main
+Coroutine ends: main
+Data returned from server: Hello world!!!
+Main program ends: main
+ */
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-06.kt)
