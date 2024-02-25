@@ -331,4 +331,72 @@ internal class SampleTest {
 
 [Get full code :part_alternation_mark:](./src/test/kotlin/SampleTest.kt)
 
-**_N.B :_** We can use `runBlockingTest` for a more robust testing experience within `JUnit` test suites.
+**_N.B :_** We can
+use [runTest](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/kotlinx.coroutines.test/run-test.html)
+for a more robust testing experience-the code runs will skip delays .
+
+### Cancelling coroutine execution
+
+**Cancel background coroutines when necessary.**
+
+In a long-running application you might need fine-grained control on your background coroutines. For example, a user
+might have closed the page that launched a coroutine and now its result is no longer needed and its operation can be
+cancelled.
+
+Coroutine cancellation is **cooperative**. A coroutine code has to cooperate to be cancellable. But what does
+_cooperative_ mean?
+
+- In coroutine cancellation, the coroutine itself needs to check for a cancellation
+- All the suspending functions -`delay` `yield` `withContext`etc - in `kotlinx.coroutines` are **cancellable**.
+- They check for cancellation of coroutine and throw `CancellationException` when cancelled.
+
+```kotlin
+    println("Main program starts: ${Thread.currentThread().name}") // main thread
+
+val myCancellableJob = launch {
+    try {
+        doSomeDelayedJobs() //actual long-running work
+    } catch (e: CancellationException) {
+        println(e) //handle efficiently
+    } finally {
+        println("job: I'm running finally")
+    }
+}
+waitForTimes(1300L)
+println("main: I'm tired of waiting!")
+myCancellableJob.cancelAndJoin() // myCancellableJob will throw an `CancellationException` which handled in the catch block
+println("main: Now I can quit.")
+
+println("Main program ends: ${Thread.currentThread().name}")
+
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-07.kt)
+
+#### Using `yield` in Coroutines:
+
+The yield function is a suspending function used within a coroutine. It allows coroutines on the same dispatcher to run.
+
+```kotlin
+println("Main program starts: ${Thread.currentThread().name}") // main thread
+
+val job = launch {
+    try {
+        for (i in 0..500) {
+            println("Non delay job: I'm job $i ...")
+            yield()// Without yield we can not cancel the job until it finish it
+        }
+    } catch (e: CancellationException) {
+        println(e)
+    } finally {
+        println("job: I'm running finally")
+    }
+}
+delay(2)
+println("main: I'm tired of waiting!")
+job.cancelAndJoin()
+println("main: Now I can quit.")
+println("Main program ends: ${Thread.currentThread().name}")
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-08.kt)
