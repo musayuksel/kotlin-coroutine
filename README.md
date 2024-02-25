@@ -409,7 +409,7 @@ Check this property in `long-running computation loops` to support cancellation:
 
 ```kotlin
  val job = launch(Dispatchers.Default) {//we will cover Dispatchers soon
-    var someJob = 0;
+    var someJob = 0
     while (isActive) {
         //we don't need to use delay/yield
         println("Non delay job: I'm job ${someJob++}...")
@@ -424,3 +424,38 @@ println("Main program ends: ${Thread.currentThread().name}")
 ```
 
 [Get full code :part_alternation_mark:](./src/main/kotlin/basics-09.kt)
+
+### Timeouts
+
+Similar to launch ans async functions, `withTimeout` and `withTimeoutOrNull` functions are coroutine builders.
+
+The most obvious practical reason to cancel execution of a coroutine is because its execution time has exceeded some
+timeout.
+You can manually track the reference to the corresponding `Job` and `launch` a separate coroutine to `cancel` the
+tracked one after `delay`.
+
+However there is a **_ready_** to use `withTimeout` function that does it.
+
+`withTimeOut` : Runs a given suspending block of code inside a coroutine with a specified timeout and throws a TimeoutCancellationException if the timeout was exceeded.
+```kotlin
+withTimeout(1200) {
+    try {
+        doSomeDelayedJobs()
+    } catch (ex: TimeoutCancellationException) { // It will throw TimeoutCancellationException
+        println("TimeoutCancellationException: $ex")
+    } finally {
+        println("job: I'm running finally")
+    }
+
+  // Program will crash before here!
+}
+```
+`withTimeoutOrNull`: Runs a given suspending block of code inside a coroutine with a specified timeout and returns `null` if this timeout was exceeded. If the given timeMillis is non-positive, null is returned immediately.
+
+```kotlin
+  val someData: String? = withTimeoutOrNull(1200) {//Returns data from fun or null
+  doSomeDelayedJobs()
+}
+// Program will NOT crash before here!
+println("The return data is $someData")
+```
