@@ -400,3 +400,27 @@ println("Main program ends: ${Thread.currentThread().name}")
 ```
 
 [Get full code :part_alternation_mark:](./src/main/kotlin/basics-08.kt)
+
+#### Using `isActive` in Coroutines:
+
+Returns `true` when the current **Job** is still **active** (has **_not completed_** and was **_not cancelled_** yet).
+
+Check this property in `long-running computation loops` to support cancellation:
+
+```kotlin
+ val job = launch(Dispatchers.Default) {//we will cover Dispatchers soon
+    var someJob = 0;
+    while (isActive) {
+        //we don't need to use delay/yield
+        println("Non delay job: I'm job ${someJob++}...")
+    }
+}
+delay(2)
+println("main: I'm tired of waiting!")
+job.cancelAndJoin()
+println("main: Now I can quit.")
+println("Main program ends: ${Thread.currentThread().name}")
+
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-09.kt)
