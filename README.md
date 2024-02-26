@@ -544,3 +544,49 @@ We have control on when exactly to start the execution by calling `start`.
 Note that if we just call `await` in println **without** first calling `start` on individual coroutines, this will lead
 to **_sequential behavior_**, since `await` starts the coroutine execution and _waits_ for its finish, which is not the
 intended use-case for laziness.
+
+### Structured concurrency with async
+
+**Structured Concurrency:** An approach to managing concurrent tasks within clear hierarchical relationships. Ensuring
+that `child` tasks terminate when their `parent` scope does.
+In another word, when one of the tasks throws an `exception`, **structured concurrency** ensures that the other task is
+also _cancelled_.
+
+```kotlin
+suspend fun doSomeConcurrentJobWithError() = coroutineScope {
+    val msg1 = async {
+        try {
+            delay(Long.MAX_VALUE) // Emulates very long computation
+            "Hello"
+        } finally {
+            println("First child was cancelled")
+        }
+    }
+    val msg2 = async {
+        println("Second child throws an exception")
+        throw Exception("Some errors!!!!")
+        "World!!!"
+    }
+    println("Return data: ${msg1.await() + msg2.await()}")
+}
+
+fun main() = runBlocking {
+    //..
+    try {
+        doSomeConcurrentJobWithError()
+    } catch (ex: Exception) {
+        println("Exception $ex")
+    }
+    //..
+}
+
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-15.kt)
+
+- Child coroutines msg1 and msg2 are launched concurrently,
+- msg2 immediately `throws` an `exception`, propagating to the `coroutineScope`,
+- The `coroutineScope` is cancelled due to the exception, **_also cancelling_** `msg1`.
+- The `finally` block in `msg1` executes, printing "First child was cancelled",
+- The `exception` is caught in the `main` function and printed.
+- The main program ends safely.
