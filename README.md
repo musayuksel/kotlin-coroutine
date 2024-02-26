@@ -590,3 +590,87 @@ fun main() = runBlocking {
 - The `finally` block in `msg1` executes, printing "First child was cancelled",
 - The `exception` is caught in the `main` function and printed.
 - The main program ends safely.
+
+## Coroutine context and dispatchers
+
+Each `coroutine` has its own **_CoroutineScope_**. And child coroutine can inherit context properties from their parent
+coroutine.
+
+```kotlin
+runBlocking {
+    println("runBlocking Scope: $this")
+    launch {
+        println("Parent launch Scope: $this")
+        async {
+            println("async Scope: $this")
+        }
+        launch {
+            println("Child launch Scope: $this")
+        }
+    }
+}
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-16.kt)
+
+### Without parameter (confined):
+
+A coroutine launched without an explicit dispatcher inherits the context from its immediate _parent_ coroutine. Even
+after using suspending functions like `delay`, it continues to run on the **_same thread_**.
+
+```kotlin
+runBlocking {
+    println("Main program starts: ${Thread.currentThread().name}")
+    launch {
+        println("T1- Without context: ${Thread.currentThread().name}") // Thread: main
+        delay(1000)
+        println("T1- Without context after delay: ${Thread.currentThread().name}") // Still on the same thread: main
+    }
+}
+```
+
+### With parameter `Dispatchers.Default`:
+
+It is similar to `GlobalScope.launch { } `
+
+```kotlin
+ launch(Dispatchers.Default) {
+    println("T2: ${Thread.currentThread().name}")   // Thread: T1
+    delay(1000)
+    println("T2 after delay: ${Thread.currentThread().name}")   // Thread: Either T1 or some other thread
+}
+```
+
+### With parameter `Dispatchers.Unconfined`:
+
+Starts the coroutine on the **_current thread_** (the thread where the launch is called).
+However, _after any suspending_ function (like `delay`, `network calls`, etc.) is encountered, the coroutine might be
+continued on a **different thread** determined by the `suspending` function itself.
+
+```kotlin
+runBlocking {
+    launch(Dispatchers.Unconfined) {
+        println("Started on the main thread: ${Thread.currentThread().name}")
+        delay(1000) // Suspends the coroutine, might switch threads here.
+        println("Resumed after delay: ${Thread.currentThread().name}")
+    }
+}
+```
+
+### With parameter `coroutineContext`:
+
+Explicitly inherits the context of the current coroutine scope. This allows you to propagate specific configurations (
+like error handlers) to child coroutines.
+
+```kotlin
+runBlocking {
+    val customContext = CoroutineContext(IO) // Example context with IO dispatcher
+    launch(customContext) {
+        // This coroutine will inherit the custom context with the IO dispatcher.
+        println("Running with custom context: ${Thread.currentThread().name}") // Might run on an IO thread.
+    }
+}
+
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-17.kt)
