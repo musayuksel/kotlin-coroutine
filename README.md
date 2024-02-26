@@ -436,7 +436,9 @@ tracked one after `delay`.
 
 However there is a **_ready_** to use `withTimeout` function that does it.
 
-`withTimeOut` : Runs a given suspending block of code inside a coroutine with a specified timeout and throws a TimeoutCancellationException if the timeout was exceeded.
+`withTimeOut` : Runs a given suspending block of code inside a coroutine with a specified timeout and throws a
+TimeoutCancellationException if the timeout was exceeded.
+
 ```kotlin
 withTimeout(1200) {
     try {
@@ -447,15 +449,98 @@ withTimeout(1200) {
         println("job: I'm running finally")
     }
 
-  // Program will crash before here!
+    // Program will crash before here!
 }
 ```
-`withTimeoutOrNull`: Runs a given suspending block of code inside a coroutine with a specified timeout and returns `null` if this timeout was exceeded. If the given timeMillis is non-positive, null is returned immediately.
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-10.kt)
+
+`withTimeoutOrNull`: Runs a given suspending block of code inside a coroutine with a specified timeout and
+returns `null` if this timeout was exceeded. If the given timeMillis is non-positive, null is returned immediately.
 
 ```kotlin
   val someData: String? = withTimeoutOrNull(1200) {//Returns data from fun or null
-  doSomeDelayedJobs()
+    doSomeDelayedJobs()
 }
 // Program will NOT crash before here!
 println("The return data is $someData")
 ```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-11.kt)
+
+## Composing suspending functions
+
+### Sequential by default
+
+Coroutine is **_sequential_** by default.
+
+In practice, we do this if we use the result of the _first_ function to make a decision on whether we need to invoke the
+_second_ one or to decide on how to invoke it.
+
+```kotlin
+  val totalTime = measureTimeMillis {
+    val msg1 = doSomeDelayedJobsOne()
+    val msg2 = doSomeDelayedJobsTwo() // will run sequential
+    println("Return data: ${msg1 + msg2}")
+}
+println("Total time is: $totalTime")// msg1 time + msg2 time
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-12.kt)
+
+### Concurrent using async
+
+if there are **no dependencies** between invocations of `doSomeDelayedJobsOne` and `doSomeDelayedJobsTwo` and we want to
+get the answer _faster_, by doing both concurrently? This is where `async` comes to help.
+
+`async` is just like `launch`. It starts a _separate_ coroutine which is a light-weight thread that works **concurrently
+** with all the other coroutines.
+
+**The difference:**
+
+- `launch` returns a `Job` and does not carry _any resulting value_,
+- `async` returns a `Deferred` — a light-weight non-blocking future that represents a `promise` to provide a result
+  later.
+- You can use `.await()` on a _deferred_ value to get its eventual result,
+- `Deferred` is also a `Job`, so you can **_cancel_** it if needed.
+
+```kotlin
+ val totalTime = measureTimeMillis {
+    val msg1: Deferred<String> = async { doSomeDelayedJobsOne() }
+    val msg2: Deferred<String> = async { doSomeDelayedJobsTwo() } // will run concurrent manner
+    println("Return data: ${msg1.await() + msg2.await()}")
+}
+println("Total time is: $totalTime")// ~longest one
+```
+
+This is twice as fast, because the two coroutines execute concurrently. Note that concurrency with coroutines is always
+explicit.
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-13.kt)
+
+### Lazily started async
+
+Optionally, `async` can be made `lazy` by setting its start parameter to `CoroutineStart.LAZY`.
+
+In this mode it **_only starts_** the coroutine when its result is **_required_** by `await`, or if its Job's start
+function is invoked.
+
+```kotlin
+{
+    val msg1: Deferred<String> = async(start = CoroutineStart.LAZY) { doSomeDelayedJobsOne() }
+    val msg2: Deferred<String> = async(start = CoroutineStart.LAZY) { doSomeDelayedJobsTwo() }
+    val msg3: Deferred<String> = async(start = CoroutineStart.LAZY) { doSomeUnnecessaryDelayedJobs() }
+    //some other logic
+    msg1.start()
+    msg2.start()
+    // we don't need to invoke the msg3
+    println("Return data: ${msg1.await() + msg2.await()}")
+}
+```
+
+[Get full code :part_alternation_mark:](./src/main/kotlin/basics-14.kt)
+
+We have control on when exactly to start the execution by calling `start`.
+Note that if we just call `await` in println **without** first calling `start` on individual coroutines, this will lead
+to **_sequential behavior_**, since `await` starts the coroutine execution and _waits_ for its finish, which is not the
+intended use-case for laziness.
